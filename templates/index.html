@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>kiyLoad — Video Downloader</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='brand/kiyload-down.svg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta name="description" content="Download videos using yt-dlp from your browser (server-side).">
+</head>
+<body>
+    <header class="site-header">
+        <div class="inner">
+            <div class="brand">
+                <img class="brand-logo" src="{{ url_for('static', filename='brand/kiyload-down.svg') }}" alt="kiyLoad logo" width="34" height="34" />
+                <span class="brand-title">kiyLoad</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="content">
+        <section class="card" aria-labelledby="download-heading">
+            <h1 id="download-heading" style="text-align:center;">
+                Download YouTube &amp; Instagram Videos
+            </h1>
+            <p class="tagline muted">Fast, secure, and convenient video downloads from your favorite platforms.</p>
+            
+
+            <form id="download-form" class="download-form" aria-describedby="instructions">
+                <label for="video-url" class="sr-only">Video URL</label>
+                <div class="input-group">
+                    <input type="url" id="video-url" name="url" placeholder="Paste your video link here" required aria-required="true">
+                    <button type="submit" id="download-button" class="btn-icon" aria-label="Search">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5Zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14Z"></path>
+                        </svg>
+                        <span class="btn-spinner" aria-hidden="true"></span>
+                    </button>
+                </div>
+                <div id="instructions" class="muted">Your download link will appear here when it's ready.</div>
+            </form>
+
+            <div id="status" role="status" aria-live="polite"></div>
+            <div id="preview" class="preview" aria-live="polite"></div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="inner center">
+            <small>&copy; 2025 kiyLoad. All rights reserved.</small>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
