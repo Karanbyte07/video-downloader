@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Environments
+.venv/
+venv/
+.env
+.env.*
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# App artifacts
+static/downloads/
+static/*.tmp
+
+# Flask instance folder
+instance/
+
+# Node (if any frontend tooling later)
+node_modules/
+
+# JetBrains
+.idea/
+
+# Git
+*.orig
