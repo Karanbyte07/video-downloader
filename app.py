@@ -45,51 +45,103 @@ def _has_ffmpeg() -> bool:
     logger.warning("FFmpeg not detected; falling back to progressive formats (audio codec may not be MP3).")
     return False
 
-def download_with_yt_dlp(url: str) -> dict:
+def download_with_yt_dlp(url: str, format_type: str = None, media_type: str = None) -> dict:
     """
     Download a video from the given URL and return metadata.
     Supports multiple formats with fallback.
     """
-    # Prefer H.264 MP4 video + any audio, then best MP4 progressive as fallback
-    # When FFmpeg is available, we will force MP3 audio on the merged file.
     use_ffmpeg = _has_ffmpeg()
-    # Choose format string depending on FFmpeg availability
-    if use_ffmpeg:
-        # We can merge separate streams and transcode audio
-        format_str = (
-            "bestvideo[ext=mp4][vcodec^=avc1]+bestaudio/best[ext=mp4]/best"
-        )
+    
+    # Determine format string based on user selection
+    if media_type == "audio":
+        # Audio-only downloads
+        if format_type == "320kbps":
+            format_str = "bestaudio[ext=mp3]/bestaudio/best"
+        elif format_type == "128kbps":
+            format_str = "worstaudio[ext=mp3]/worstaudio/best"
+        else:
+            format_str = "bestaudio[ext=mp3]/bestaudio/best"
     else:
-        # No merging: insist on progressive MP4 that already contains audio
-        # Fallback to any single file with audio if MP4 unavailable (warn user)
-        format_str = "best[ext=mp4][acodec!=none]/best[acodec!=none]"
+        # Video downloads with specific resolution
+        if format_type == "1080p":
+            if use_ffmpeg:
+                format_str = "bestvideo[height<=1080][ext=mp4][vcodec^=avc1]+bestaudio/best[height<=1080][ext=mp4]/best[height<=1080]"
+            else:
+                format_str = "best[height<=1080][ext=mp4][acodec!=none]/best[height<=1080][acodec!=none]"
+        elif format_type == "720p":
+            if use_ffmpeg:
+                format_str = "bestvideo[height<=720][ext=mp4][vcodec^=avc1]+bestaudio/best[height<=720][ext=mp4]/best[height<=720]"
+            else:
+                format_str = "best[height<=720][ext=mp4][acodec!=none]/best[height<=720][acodec!=none]"
+        elif format_type == "480p":
+            if use_ffmpeg:
+                format_str = "bestvideo[height<=480][ext=mp4][vcodec^=avc1]+bestaudio/best[height<=480][ext=mp4]/best[height<=480]"
+            else:
+                format_str = "best[height<=480][ext=mp4][acodec!=none]/best[height<=480][acodec!=none]"
+        else:
+            # Default: best quality
+            if use_ffmpeg:
+                format_str = "bestvideo[ext=mp4][vcodec^=avc1]+bestaudio/best[ext=mp4]/best"
+            else:
+                format_str = "best[ext=mp4][acodec!=none]/best[acodec!=none]"
 
+    # Set output template based on media type
+    if media_type == "audio":
+        outtmpl = os.path.join(DOWNLOAD_FOLDER, "%(title)s.%(ext)s")
+    else:
+        outtmpl = os.path.join(DOWNLOAD_FOLDER, "%(title)s.%(ext)s")
+    
     ydl_opts = {
         # Constrain selection as above
         "format": format_str,
-        "outtmpl": os.path.join(DOWNLOAD_FOLDER, "%(title)s.%(ext)s"),
+        "outtmpl": outtmpl,
         "quiet": True,
         "noplaylist": True,
         # Prefer ffmpeg if available (yt-dlp will handle merging/remuxing)
         "prefer_ffmpeg": use_ffmpeg,
+        # Optimizations for faster downloads
+        "no_warnings": True,
+        "extract_flat": False,
+        "writeinfojson": False,
+        "writesubtitles": False,
+        "writeautomaticsub": False,
+        "ignoreerrors": False,
+        "no_check_certificate": True,
+        "prefer_insecure": False,
+        # Skip unnecessary processing
+        "skip_unavailable_fragments": True,
+        "keep_fragments": False,
     }
 
     if use_ffmpeg:
-        # Ensure the final container is MP4 and the audio codec is MP3
-        ydl_opts.update(
-            {
-                "merge_output_format": "mp4",
-                # Pass FFmpeg args: copy video, transcode audio to MP3 at 192 kbps
-                "postprocessor_args": [
-                    "-c:v",
-                    "copy",
-                    "-c:a",
-                    "libmp3lame",
-                    "-b:a",
-                    "192k",
-                ],
-            }
-        )
+        if media_type == "audio":
+            # For audio-only downloads, ensure MP3 output
+            ydl_opts.update(
+                {
+                    "merge_output_format": "mp3",
+                    "postprocessor_args": [
+                        "-c:a",
+                        "libmp3lame",
+                        "-b:a",
+                        "320k" if format_type == "320kbps" else "128k",
+                    ],
+                }
+            )
+        else:
+            # For video downloads, ensure MP4 container with MP3 audio
+            ydl_opts.update(
+                {
+                    "merge_output_format": "mp4",
+                    "postprocessor_args": [
+                        "-c:v",
+                        "copy",
+                        "-c:a",
+                        "libmp3lame",
+                        "-b:a",
+                        "192k",
+                    ],
+                }
+            )
     else:
         # Without FFmpeg, rely on progressive formats that already include audio
         # Note: audio codec will likely be AAC/Opus, not MP3.
@@ -108,12 +160,22 @@ def download_with_yt_dlp(url: str) -> dict:
         if not os.path.exists(expected_path):
             logger.warning(f"Expected file not found: {expected_path}")
             # Try looking for any matching file with a similar name
-            mp4_files = [f for f in os.listdir(DOWNLOAD_FOLDER) if f.endswith(".mp4")]
-            if mp4_files:
-                # Sort by creation time, newest first
-                mp4_files.sort(key=lambda x: os.path.getctime(os.path.join(DOWNLOAD_FOLDER, x)), reverse=True)
-                actual_filename = mp4_files[0]
-                logger.info(f"Using alternative file found: {actual_filename}")
+            if media_type == "audio":
+                # Look for audio files
+                audio_files = [f for f in os.listdir(DOWNLOAD_FOLDER) if f.endswith((".mp3", ".m4a", ".ogg"))]
+                if audio_files:
+                    # Sort by creation time, newest first
+                    audio_files.sort(key=lambda x: os.path.getctime(os.path.join(DOWNLOAD_FOLDER, x)), reverse=True)
+                    actual_filename = audio_files[0]
+                    logger.info(f"Using alternative audio file found: {actual_filename}")
+            else:
+                # Look for video files
+                video_files = [f for f in os.listdir(DOWNLOAD_FOLDER) if f.endswith((".mp4", ".webm", ".mkv"))]
+                if video_files:
+                    # Sort by creation time, newest first
+                    video_files.sort(key=lambda x: os.path.getctime(os.path.join(DOWNLOAD_FOLDER, x)), reverse=True)
+                    actual_filename = video_files[0]
+                    logger.info(f"Using alternative video file found: {actual_filename}")
         else:
             logger.info(f"Downloaded file found: {actual_filename}")
         
@@ -260,17 +322,19 @@ def download_video():
     """API endpoint to handle the download request."""
     data = request.get_json(force=True)
     url = data.get("url")
+    format_type = data.get("format")  # e.g., "1080p", "720p", "320kbps"
+    media_type = data.get("type")     # "video" or "audio"
 
     if not url:
         return jsonify({"error": "URL is required."}), 400
 
     try:
-        result = download_with_yt_dlp(url)
+        result = download_with_yt_dlp(url, format_type, media_type)
         logger.info(f"Download successful: {result['filename']}")
         
         # Add Content-Disposition header suggestion to ensure browser offers download
         result['download_url'] = f"/static/downloads/{urllib.parse.quote(result['filename'])}?download=true"
-        if result.get("audio_note") != "mp3":
+        if result.get("audio_note") != "mp3" and media_type == "audio":
             result["warning"] = (
                 "Downloaded using progressive format. Audio codec may not be MP3 because FFmpeg was not detected."
             )

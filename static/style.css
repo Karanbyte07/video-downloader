@@ -90,8 +90,202 @@ a{color:#99a2ff;text-decoration:none}
 .preview{margin-top:18px}
 .preview .media{width:100%;max-height:420px;border-radius:12px;border:1px solid #2a2f4a;background:#0f1222;box-shadow:var(--shadow);overflow:hidden}
 .preview .meta{color:#c6c8d6;margin-top:10px;font-size:.95rem}
+.preview .download-message{margin-top:20px}
+.preview .download-card{
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:16px;
+    padding:20px;
+    backdrop-filter:blur(20px);
+}
+.preview .download-header{
+    margin-bottom:16px;
+}
+.preview .download-status{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+.preview .status-indicator{
+    width:8px;
+    height:8px;
+    background:var(--success);
+    border-radius:50%;
+    box-shadow:0 0 8px rgba(34,197,94,0.4);
+    animation:pulse 2s infinite;
+}
+.preview .status-text{
+    color:#fff;
+    font-size:0.9rem;
+    font-weight:600;
+    letter-spacing:0.3px;
+}
+.preview .format-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+.preview .format-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 16px;
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.05);
+    border-radius:12px;
+    transition:all 0.2s ease;
+}
+.preview .format-item:hover{
+    background:rgba(255,255,255,0.04);
+    border-color:rgba(124,58,237,0.2);
+}
+.preview .format-info{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+}
+.preview .format-type{
+    color:#fff;
+    font-size:0.85rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+}
+.preview .format-details{
+    color:var(--muted);
+    font-size:0.8rem;
+    font-weight:400;
+}
+.preview .format-download-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:8px 20px;
+    border-radius:8px;
+    background:linear-gradient(180deg,var(--accent),var(--accent-600));
+    color:white;
+    border:none;
+    cursor:pointer;
+    font-weight:600;
+    font-size:0.85rem;
+    letter-spacing:0.2px;
+    transition:all 0.2s ease;
+    position:relative;
+    overflow:hidden;
+    min-width:80px;
+}
+.preview .format-download-btn:hover{
+    filter:brightness(1.1);
+    transform:translateY(-1px);
+}
+.preview .format-download-btn:active{
+    transform:translateY(0);
+}
+.preview .format-download-btn:disabled{
+    opacity:0.7;
+    cursor:not-allowed;
+    transform:none;
+}
+.preview .format-download-btn .btn-text{
+    position:relative;
+    z-index:2;
+}
+.preview .format-download-btn .btn-progress,
+.preview .format-download-btn .btn-progress-secondary{
+    position:absolute;
+    top:0;
+    left:0;
+    height:100%;
+    background:rgba(255,255,255,0.2);
+    width:0%;
+    transition:width 0.3s ease;
+    z-index:1;
+}
+.preview .format-download-btn .btn-progress-secondary{
+    background:rgba(255,255,255,0.1);
+    transition:width 0.2s ease;
+}
+.preview .format-download-btn .btn-progress::after,
+.preview .format-download-btn .btn-progress-secondary::after{
+    content:'';
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation:button-shimmer 1.5s infinite;
+}
+.preview .format-download-btn .btn-progress-secondary::after{
+    animation:button-shimmer-secondary 2s infinite;
+}
+@keyframes pulse{
+    0%,100%{opacity:1;transform:scale(1)}
+    50%{opacity:0.7;transform:scale(1.1)}
+}
 .preview .actions{margin-top:14px; display:flex; justify-content:center; align-items:center; gap:12px; flex-wrap: wrap;}
-.preview .actions .btn-primary{padding:12px 40px}
+.preview .actions .btn-primary{padding:12px 40px;position:relative;overflow:hidden}
+.preview .actions .btn-primary .btn-spinner{position:absolute;right:12px;top:50%;transform:translateY(-50%)}
+
+/* Progress bars inside download button */
+.btn-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    width: 0%;
+    transition: width 0.3s ease;
+    z-index: 1;
+}
+
+.btn-progress-secondary {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    width: 0%;
+    transition: width 0.2s ease;
+    z-index: 1;
+}
+
+.btn-progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: button-shimmer 1.5s infinite;
+}
+
+.btn-progress-secondary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: button-shimmer-secondary 2s infinite;
+}
+
+@keyframes button-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes button-shimmer-secondary {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.btn-primary .btn-text {
+    position: relative;
+    z-index: 2;
+}
 .preview .actions .download-link{display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:12px 40px; 
 border-radius:12px; background:linear-gradient(180deg,#22c55e,#16a34a); color:white; border:none; cursor:pointer; 
 font-weight:700; letter-spacing:.2px; text-decoration:none; transition:transform .06s ease, filter .2s ease;}
@@ -100,3 +294,59 @@ font-weight:700; letter-spacing:.2px; text-decoration:none; transition:transform
 
 /* Fix for status links */
 #status a {color:#22c55e; text-decoration:underline; font-weight:bold;}
+
+/* Progress bar styles */
+.progress-container {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.progress-label {
+    font-size: 0.98rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-600));
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-percentage {
+    font-size: 0.9rem;
+    color: var(--accent);
+    font-weight: 600;
+}
