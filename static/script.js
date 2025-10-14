@@ -108,14 +108,23 @@ function renderPreview(data) {
     meta.textContent = title;
     wrapper.appendChild(meta);
 
-    // Add professional message above download button
+    // Add professional info panel above download button
     const downloadMessage = document.createElement('div');
     downloadMessage.className = 'download-message';
     downloadMessage.innerHTML = `
-        <div class="download-section">
-            <div class="download-info">
-                <span class="download-label">Download Available</span>
-                <span class="download-quality">High Quality • MP4 Format</span>
+        <div class="download-section info-panel" role="group" aria-label="Download information">
+            <div class="info-left">
+                <div class="icon-circle" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="icon-download"><path fill="currentColor" d="M12 3a1 1 0 0 1 1 1v9.586l2.293-2.293a1 1 0 1 1 1.414 1.414l-4.007 4.007a1.5 1.5 0 0 1-2.121 0L6.572 12.707a1 1 0 1 1 1.414-1.414L10.28 13.59V4a1 1 0 0 1 1-1Zm-7 15a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z"/></svg>
+                </div>
+                <div class="info-text">
+                    <div class="info-title">Ready to download</div>
+                    <div class="info-subtitle">Best available quality</div>
+                </div>
+            </div>
+            <div class="info-right">
+                <span class="badge" title="Format">MP4</span>
+                <span class="badge" title="Quality">HD</span>
             </div>
         </div>
     `;
