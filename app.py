@@ -81,9 +81,9 @@ def download_with_yt_dlp(url: str, format_type: str = None, media_type: str = No
         else:
             # Default: best quality
             if use_ffmpeg:
-                format_str = "bestvideo[ext=mp4][vcodec^=avc1]+bestaudio/best[ext=mp4]/best"
+                format_str = "bestvideo+bestaudio/best"
             else:
-                format_str = "best[ext=mp4][acodec!=none]/best[acodec!=none]"
+                format_str = "best[acodec!=none]/best"
 
     # Set output template based on media type
     if media_type == "audio":
@@ -128,20 +128,10 @@ def download_with_yt_dlp(url: str, format_type: str = None, media_type: str = No
                 }
             )
         else:
-            # For video downloads, ensure MP4 container with MP3 audio
-            ydl_opts.update(
-                {
-                    "merge_output_format": "mp4",
-                    "postprocessor_args": [
-                        "-c:v",
-                        "copy",
-                        "-c:a",
-                        "libmp3lame",
-                        "-b:a",
-                        "192k",
-                    ],
-                }
-            )
+            # For video downloads, merge best video+audio into MKV
+            ydl_opts.update({
+                "merge_output_format": "mkv"
+            })
     else:
         # Without FFmpeg, rely on progressive formats that already include audio
         # Note: audio codec will likely be AAC/Opus, not MP3.
@@ -190,18 +180,17 @@ def download_with_yt_dlp(url: str, format_type: str = None, media_type: str = No
         "ext": info.get("ext"),
         "duration": info.get("duration"),
         "uploader": info.get("uploader"),
-        "audio_note": ("mp3" if use_ffmpeg else "progressive (codec may not be mp3)"),
+        "audio_note": ("merged mkv (bestvideo+bestaudio)" if use_ffmpeg else "progressive (no merge)"),
     }
 
     # Add warnings when FFmpeg is missing or chosen format isn't MP4
     if not use_ffmpeg:
         ext = (info.get("ext") or "").lower()
         acodec = (info.get("acodec") or "").lower()
-        if ext != "mp4" or acodec in ("opus", "vorbis"):
+        if acodec in ("opus", "vorbis"):
             result["warning"] = (
-                "FFmpeg not detected. Downloaded a single-file format for compatibility; "
-                "audio codec may be Opus/Vorbis and not play in some players. Install FFmpeg "
-                "to get MP3 audio in an MP4 file."
+                "FFmpeg not detected. Downloaded a single-file format; audio codec may be Opus/Vorbis. "
+                "Install FFmpeg to merge best video+audio into MKV."
             )
 
     return result
@@ -223,8 +212,10 @@ def extract_info_no_download(url: str) -> dict:
         logger.error(f"Error extracting info: {str(e)}")
         raise
 
-    # Determine preview URL
+    # Determine preview URL and best available quality/format
     preview_url = None
+    best_height = None
+    best_ext = None
     if isinstance(info, dict):
         # Check for direct URL first
         preview_url = info.get("url")
@@ -276,6 +267,52 @@ def extract_info_no_download(url: str) -> dict:
                         logger.info(f"Found last-resort preview format: {f.get('format_id')}")
                         break
 
+    # Independently compute highest available height across ALL video formats (even video-only)
+    try:
+        all_formats_full = info.get("formats") or []
+        max_height = 0
+        height_to_exts = {}
+        for f in all_formats_full:
+            if not f:
+                continue
+            if f.get("vcodec") == "none":
+                continue
+            h = f.get("height") or 0
+            try:
+                h = int(h)
+            except Exception:
+                h = 0
+            if h <= 0:
+                continue
+            max_height = max(max_height, h)
+            ext = (f.get("ext") or "").lower()
+            height_to_exts.setdefault(h, set()).add(ext)
+
+        if max_height > 0:
+            exts_at = height_to_exts.get(max_height, set())
+            best_ext = "mp4" if "mp4" in exts_at else (next(iter(exts_at)) if exts_at else None)
+            best_height = max_height
+    except Exception as _:
+        pass
+
+    # Map height to user-friendly label
+    def _quality_label(height):
+        if not height:
+            return None
+        if height >= 4320:
+            return "8K"
+        if height >= 2160:
+            return "4K"
+        if height >= 1440:
+            return "2K"
+        if height >= 1080:
+            return "FHD"
+        if height >= 720:
+            return "HD"
+        if height >= 480:
+            return "SD"
+        return f"{height}p"
+
     return {
         "title": info.get("title"),
         "thumbnail": info.get("thumbnail"),
@@ -283,6 +320,9 @@ def extract_info_no_download(url: str) -> dict:
         "uploader": info.get("uploader"),
         "webpage_url": info.get("webpage_url"),
         "preview_url": preview_url,
+        "best_ext": best_ext,
+        "best_height": best_height,
+        "best_quality_label": _quality_label(best_height),
     }
 
 
@@ -354,6 +394,7 @@ def info_video():
         return jsonify({"error": "URL is required."}), 400
     try:
         result = extract_info_no_download(url)
+        print(f"Result: {result}")
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": f"Info fetch failed: {str(e)}"}), 500

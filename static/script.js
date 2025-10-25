@@ -124,7 +124,7 @@ function renderPreview(data) {
             </div>
             <div class="info-right">
                 <span class="badge" title="Format">MP4</span>
-                <span class="badge" title="Quality">HD</span>
+                <span class="badge" title="Quality">8K</span>
             </div>
         </div>
     `;
